@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b5d3b">
+<title>PoultryDoc GH — Poultry Disease Scanner &amp; Treatment Guide</title>
+<meta name="description" content="Scan your poultry, identify diseases, and get natural + chemical treatments tailored for Ghana. Works for chickens, guinea fowl, ducks, turkeys and pigeons.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐔</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-ico">🐔</span>
+    <div>
+      <h1>PoultryDoc <span class="gh">GH</span></h1>
+      <p class="tagline">Scan. Identify. Treat. — made for Ghana's farmers</p>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="scan"><span>📷</span>Scan</button>
+  <button class="tab" data-tab="checker"><span>🩺</span>Symptom Check</button>
+  <button class="tab" data-tab="poop"><span>💩</span>Droppings Guide</button>
+  <button class="tab" data-tab="community"><span>🌍</span>Community</button>
+  <button class="tab" data-tab="library"><span>📚</span>Diseases</button>
+  <button class="tab" data-tab="prevent"><span>🛡️</span>Prevention</button>
+</nav>
+
+<main>
+
+<!-- ══════════ SCAN TAB ══════════ -->
+<section id="tab-scan" class="tabpane active">
+  <div class="hero card">
+    <img src="https://media.base44.com/images/public/6a905b28db05fd158cb14c9d/e3b86da07_generated_image.png" alt="Farmer scanning poultry health with a phone" class="hero-img">
+    <div class="hero-txt">
+      <h2>Scan your bird or its droppings</h2>
+      <p>Take a clear photo of the sick bird, its droppings, face, comb or legs. The AI compares what it sees with common Ghanaian poultry diseases.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>1. What are you photographing?</h3>
+    <div class="chiprow" id="scan-subject">
+      <button class="chip active" data-v="the whole sick bird">Whole sick bird</button>
+      <button class="chip" data-v="droppings / faeces">Droppings</button>
+      <button class="chip" data-v="the head, comb or face">Head / comb / face</button>
+      <button class="chip" data-v="the legs or feet">Legs / feet</button>
+      <button class="chip" data-v="the skin or feathers">Skin / feathers</button>
+    </div>
+
+    <h3>2. Add the photo</h3>
+    <div class="scan-actions">
+      <button class="btn primary big" id="btn-capture">📷 Take Photo</button>
+      <button class="btn big" id="btn-upload">🖼️ Upload Photo</button>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
+
+    <div id="photo-preview-wrap" class="photo-preview" hidden>
+      <img id="photo-preview" alt="Your photo">
+      <button class="btn small danger" id="btn-remove-photo">✕ Remove</button>
+    </div>
+
+    <h3>3. Quick details (helps accuracy)</h3>
+    <label class="field">
+      <span>Bird type</span>
+      <select id="scan-species">
+        <option>Chicken</option><option>Guinea fowl</option><option>Duck</option>
+        <option>Turkey</option><option>Pigeon</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Age group</span>
+      <select id="scan-age">
+        <option value="chicks">Chicks (0–8 weeks)</option>
+        <option value="growers">Growers (2–5 months)</option>
+        <option value="adults">Adults / layers</option>
+        <option value="mixed">Mixed ages</option>
+      </select>
+    </label>
+    <textarea id="scan-notes" class="field" rows="2" placeholder="Anything else? e.g. '5 died since yesterday', 'not eating', 'raining season', 'just bought new birds'"></textarea>
+
+    <button class="btn primary big full" id="btn-analyze">🔍 Analyze Photo</button>
+    <div id="scan-status" class="status"></div>
+  </div>
+
+  <div class="card" id="ai-key-card">
+    <h3>🔑 Enable photo AI</h3>
+    <p class="small">Photo analysis uses Google Gemini (free tier). Paste your free API key once — it stays on this phone only.</p>
+    <div class="ai-key-row">
+      <input type="password" id="ai-key" placeholder="Paste your Gemini API key (free at aistudio.google.com/apikey)">
+      <button class="btn primary" id="btn-save-key">Save</button>
+    </div>
+    <p class="small" id="ai-key-status"></p>
+    <p class="small dim">No key? No problem — the <b>Symptom Check</b> and <b>Droppings Guide</b> work fully offline.</p>
+  </div>
+</section>
+
+<!-- ══════════ SYMPTOM CHECKER ══════════ -->
+<section id="tab-checker" class="tabpane">
+  <div class="card">
+    <h2>🩺 Answer a few questions about the flock</h2>
+    <p class="dim">Tick everything you've seen. Unsure? Skip it — the checker works with partial answers.</p>
+
+    <h3>Which birds?</h3>
+    <label class="field"><span>Bird type</span>
+      <select id="ck-species"><option>Chicken</option><option>Guinea fowl</option><option>Duck</option><option>Turkey</option><option>Pigeon</option></select>
+    </label>
+    <label class="field"><span>Age group</span>
+      <select id="ck-age">
+        <option value="chicks">Chicks (0–8 weeks)</option>
+        <option value="growers">Growers (2–5 months)</option>
+        <option value="adults">Adults / layers</option>
+        <option value="mixed">Mixed ages</option>
+      </select>
+    </label>
+
+    <div id="ck-groups"></div>
+
+    <div class="checknav">
+      <button class="btn ghost" id="btn-ck-clear">Clear all</button>
+      <button class="btn primary big" id="btn-ck-run">🔍 Find the Disease</button>
+    </div>
+  </div>
+
+  <div id="ck-results"></div>
+</section>
+
+<!-- ══════════ DROPPINGS GUIDE ══════════ -->
+<section id="tab-poop" class="tabpane">
+  <div class="card">
+    <h2>💩 Droppings Colour Guide</h2>
+    <p class="dim">Droppings are the fastest way to know what's happening inside a bird. Match what you see:</p>
+  </div>
+  <div id="poop-grid"></div>
+</section>
+
+<!-- ══════════ COMMUNITY ══════════ -->
+<section id="tab-community" class="tabpane">
+  <div class="card">
+    <h2>🌍 Report an outbreak</h2>
+    <p class="dim">Tell farmers near you what you're seeing. Every report builds a live disease map of Ghana — and helps everyone act early.</p>
+    <label class="field"><span>Region</span>
+      <select id="rep-region">
+        <option>Northern</option><option>North East</option><option>Savannah</option>
+        <option>Upper East</option><option>Upper West</option><option>Ashanti</option>
+        <option>Bono</option><option>Bono East</option><option>Ahafo</option>
+        <option>Central</option><option>Eastern</option><option>Western</option>
+        <option>Western North</option><option>Volta</option><option>Oti</option><option>Greater Accra</option>
+      </select>
+    </label>
+    <label class="field"><span>District / town</span>
+      <input id="rep-district" placeholder="e.g. Tamale Metro, Sagnarigu, Kumbungu">
+    </label>
+    <label class="field"><span>Disease (best guess — tick from checker if unsure)</span>
+      <select id="rep-disease"></select>
+    </label>
+    <label class="field"><span>Bird type</span>
+      <select id="rep-species"><option>Chicken</option><option>Guinea fowl</option><option>Duck</option><option>Turkey</option><option>Pigeon</option></select>
+    </label>
+    <div class="rep-counts">
+      <label class="field"><span>How many sick?</span><input id="rep-sick" type="number" min="0" value="0" inputmode="numeric"></label>
+      <label class="field"><span>How many died?</span><input id="rep-dead" type="number" min="0" value="0" inputmode="numeric"></label>
+    </div>
+    <textarea id="rep-notes" class="field" rows="2" placeholder="Notes (optional) — e.g. 'started after the rain', 'bought new birds last week'"></textarea>
+    <button class="btn primary big full" id="btn-report">🌍 Send Report</button>
+    <div id="rep-status" class="status"></div>
+  </div>
+  <div class="card">
+    <h3>🔥 Outbreak Watch — Ghana, last 30 days</h3>
+    <div id="watch-list"><p class="small dim">Loading…</p></div>
+  </div>
+  <div class="card">
+    <h3>📰 Recent farmer reports</h3>
+    <div id="feed-list"><p class="small dim">Loading…</p></div>
+  </div>
+</section>
+
+<!-- ══════════ LIBRARY ══════════ -->
+<section id="tab-library" class="tabpane">
+  <div class="card">
+    <h2>📚 Disease Library</h2>
+    <input type="search" id="lib-search" class="field" placeholder="Search disease or sign (e.g. 'twisted neck')">
+    <div class="chiprow" id="lib-filter">
+      <button class="chip active" data-v="all">All</button>
+      <button class="chip" data-v="Viral">Viral</button>
+      <button class="chip" data-v="Bacterial">Bacterial</button>
+      <button class="chip" data-v="Parasitic">Parasitic</button>
+      <button class="chip" data-v="Management">Nutrition / Environment</button>
+    </div>
+  </div>
+  <div id="lib-list"></div>
+</section>
+
+<!-- ══════════ PREVENTION ══════════ -->
+<section id="tab-prevent" class="tabpane">
+  <div class="card">
+    <h2>🛡️ Prevention beats treatment</h2>
+    <p class="dim">In Ghana, Newcastle and Gumboro kill most village birds — both are preventable by vaccine.</p>
+  </div>
+  <div class="card">
+    <h3>💉 Standard vaccination schedule</h3>
+    <div class="sched" id="sched-list"></div>
+    <p class="small dim">Adapt to your vet officer's program. Village flocks: Newcastle booster every 3 months.</p>
+  </div>
+  <div class="card">
+    <h3>🔒 Biosecurity rules that save flocks</h3>
+    <div id="bio-list"></div>
+  </div>
+</section>
+
+</main>
+
+<!-- Disease / result detail sheet -->
+<div id="sheet-backdrop" hidden></div>
+<div id="sheet" hidden>
+  <button class="sheet-close" id="sheet-close">✕</button>
+  <div id="sheet-body"></div>
+</div>
+
+<footer>
+  <p class="small dim" id="disclaimer-foot"></p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="community.js"></script>
+</body>
+</html>
