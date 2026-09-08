@@ -306,6 +306,14 @@ Reply with ONLY valid JSON, no markdown fences:
  "photo_advice": "what better/different photo would help, or empty string"
 }`;
 
+  // Plantix-style "scanning" feedback while the AI works
+  const btn = $("#btn-analyze");
+  btn.disabled = true;
+  const origBtn = btn.innerHTML;
+  btn.innerHTML = "⏳ Scanning photo…";
+  status.className = "status";
+  status.textContent = "Analyzing your photo — a few seconds…";
+  $("#photo-preview-wrap").classList.add("scanning");
   try {
     // 1) Try the secure server endpoint first (uses server-held key, never exposed)
     let res = await fetch("/api/scan", {
@@ -339,7 +347,9 @@ Reply with ONLY valid JSON, no markdown fences:
     status.className = "status err";
     status.textContent = "⚠ " + (err.message || "Analysis failed. Try again or use Symptom Check.");
   } finally {
-    $("#btn-analyze").disabled = false;
+    btn.disabled = false;
+    btn.innerHTML = origBtn;
+    $("#photo-preview-wrap").classList.remove("scanning");
   }
 });
 
