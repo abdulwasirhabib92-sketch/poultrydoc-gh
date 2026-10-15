@@ -323,7 +323,7 @@ Reply with ONLY valid JSON, no markdown fences:
     });
     // 2) If endpoint missing (e.g. opened from file), fall back to direct Gemini call with the user's key
     if (!res.ok && res.status === 404 && userKey) {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(userKey)}`, {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(userKey)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: photoData.startsWith("data:image/jpeg") ? "image/jpeg" : "image/png", data: photoData.split(",")[1] } }] }], generationConfig: { temperature: 0.2 } })

@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   const text = prompt || "You are a poultry health expert for smallholder farmers in Ghana. Analyze this image for signs of poultry disease. Reply with ONLY valid JSON: {\"image_quality\":\"good|ok|poor\",\"visible_signs\":[],\"top_conditions\":[{\"name\":\"\",\"confidence\":0,\"why\":\"\"}],\"urgency\":\"none|low|medium|high|emergency\",\"immediate_advice\":\"\",\"photo_advice\":\"\"}";
 
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
