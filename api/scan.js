@@ -1,26 +1,72 @@
 /* PoultryDoc GH — secure photo-analysis endpoint
    Uses GEMINI_API_KEY from server env (never exposed to phones).
-   Falls back to a client-supplied key if the server env isn't set. */
-const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" };
+   Hardened (Lesson 4, Oct 25 2026):
+     * CORS locked to the app's own origins (was "*")
+     * Provider/internal errors are logged server-side, never returned to the client
+     * Per-IP rate limit to cap abuse of the server-held key
+*/
+// Allowed callers: the production domain, this project's Vercel preview
+// deployments, and local development. Add any future custom domain here.
+const ALLOWED_ORIGINS = new Set([
+  "https://poultry-doc.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+]);
+const ALLOWED_PREVIEW = /^https:\/\/poultrydoc-gh[a-z0-9-]*\.vercel\.app$/;
+
+function originAllowed(origin) {
+  return ALLOWED_ORIGINS.has(origin) || ALLOWED_PREVIEW.test(origin);
+}
+
+const RATE = { windowMs: 60_000, max: 12, hits: new Map() };
+
+function rateLimited(ip) {
+  const now = Date.now();
+  const rec = RATE.hits.get(ip);
+  if (!rec || now - rec.start > RATE.windowMs) {
+    RATE.hits.set(ip, { start: now, count: 1 });
+    return false;
+  }
+  rec.count += 1;
+  return rec.count > RATE.max;
+}
 
 export default async function handler(req, res) {
-  Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  const origin = req.headers.origin;
+  if (origin) {
+    if (!originAllowed(origin)) {
+      // Not a caller we serve: refuse without revealing anything.
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  }
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+  if (rateLimited(ip)) {
+    res.setHeader("Retry-After", "60");
+    return res.status(429).json({ error: "Too Many Requests" });
+  }
 
   let body = req.body;
-  if (typeof body === "string") { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: "bad json" }); } }
-  if (!body || typeof body !== "object") return res.status(400).json({ error: "bad request" });
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: "Bad Request" }); }
+  }
+  if (!body || typeof body !== "object") return res.status(400).json({ error: "Bad Request" });
 
   const { image, mime = "image/jpeg", prompt } = body;
-  if (!image || typeof image !== "string") return res.status(400).json({ error: "no image" });
+  if (!image || typeof image !== "string") return res.status(400).json({ error: "Bad Request" });
   const base64 = image.includes(",") ? image.split(",")[1] : image;
-  if (!base64 || base64.length > 7_000_000) return res.status(400).json({ error: "image too large (max ~5MB)" });
+  if (!base64 || base64.length > 7_000_000) return res.status(413).json({ error: "Payload Too Large" });
 
   const serverKey = process.env.GEMI_API_KEY || process.env.GEMINI_API_KEY || null;
   const clientKey = typeof body.key === "string" ? body.key : null;
   const apiKey = serverKey || clientKey;
-  if (!apiKey) return res.status(200).json({ needs_key: true, error: "No API key configured. Set GEMINI_API_KEY on the server or add a key in the app." });
+  if (!apiKey) return res.status(200).json({ needs_key: true, error: "No API key configured." });
 
   const text = prompt || "You are a poultry health expert for smallholder farmers in Ghana. Analyze this image for signs of poultry disease. Reply with ONLY valid JSON: {\"image_quality\":\"good|ok|poor\",\"visible_signs\":[],\"top_conditions\":[{\"name\":\"\",\"confidence\":0,\"why\":\"\"}],\"urgency\":\"none|low|medium|high|emergency\",\"immediate_advice\":\"\",\"photo_advice\":\"\"}";
 
@@ -34,18 +80,25 @@ export default async function handler(req, res) {
       })
     });
     if (!r.ok) {
-      const t = await r.text();
-      const msg = (r.status === 400 || r.status === 403) ? "API key rejected — check the key at aistudio.google.com/apikey" : "Gemini error " + r.status;
-      return res.status(r.status).json({ error: msg, detail: t.slice(0, 300) });
+      // Log granular detail internally; return a generic status to the caller.
+      const detail = await r.text();
+      console.error("[scan] upstream failure", r.status, String(detail).slice(0, 300).replace(/[\r\n]+/g, " "));
+      const code = r.status === 429 ? 429 : r.status >= 500 ? 503 : 502;
+      if (code === 429) res.setHeader("Retry-After", "30");
+      return res.status(code).json({ error: code === 429 ? "Too Many Requests" : "Service Unavailable" });
     }
     const data = await r.json();
     let out = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     out = out.replace(/```json|```/g, "").trim();
     let parsed;
     try { parsed = JSON.parse(out); }
-    catch { return res.status(200).json({ error: "The AI returned an unreadable answer — try retaking the photo.", raw: out.slice(0, 400) }); }
+    catch {
+      console.error("[scan] unparseable model output", out.slice(0, 200).replace(/[\r\n]+/g, " "));
+      return res.status(502).json({ error: "Bad Gateway" });
+    }
     return res.status(200).json(parsed);
   } catch (e) {
-    return res.status(502).json({ error: "Could not reach the AI service. Try again." });
+    console.error("[scan] request failed", String(e).slice(0, 200));
+    return res.status(502).json({ error: "Bad Gateway" });
   }
 }
