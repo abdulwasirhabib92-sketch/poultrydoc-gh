@@ -71,14 +71,23 @@ export default async function handler(req, res) {
   const text = prompt || "You are a poultry health expert for smallholder farmers in Ghana. Analyze this image for signs of poultry disease. Reply with ONLY valid JSON: {\"image_quality\":\"good|ok|poor\",\"visible_signs\":[],\"top_conditions\":[{\"name\":\"\",\"confidence\":0,\"why\":\"\"}],\"urgency\":\"none|low|medium|high|emergency\",\"immediate_advice\":\"\",\"photo_advice\":\"\"}";
 
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text }, { inline_data: { mime_type: mime, data: base64 } }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1200 }
-      })
-    });
+    // Hard timeout: a slow/hung provider must fail fast, never hold the function open.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20_000);
+    let r;
+    try {
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          contents: [{ parts: [{ text }, { inline_data: { mime_type: mime, data: base64 } }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1200 }
+        })
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     if (!r.ok) {
       // Log granular detail internally; return a generic status to the caller.
       const detail = await r.text();
