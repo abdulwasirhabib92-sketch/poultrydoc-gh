@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PoultryDoc GH — Moderation</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .mod-wrap{max-width:760px;margin:0 auto;padding:16px 12px 60px}
+  .mod-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fff}
+  .mod-row.hidden-row{background:var(--amber);border-color:var(--amber-b)}
+  .mod-meta{font-size:12.5px;color:var(--dim);margin:4px 0 8px}
+  .mod-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .mod-actions button{font-size:12.5px;padding:7px 12px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--red-l);color:var(--red)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-ico">🛡️</div>
+    <div>
+      <h1>PoultryDoc <span class="gh">GH</span> — Moderation</h1>
+      <p class="tagline">Review community reports and hide fakes</p>
+    </div>
+  </div>
+</header>
+
+<div class="mod-wrap">
+
+  <div class="card" id="setup-card" hidden>
+    <h2>Set your moderator PIN</h2>
+    <p class="small dim">First visit only. Choose a PIN of at least 6 characters. It is hashed on the server and never shown again. Nobody, including the AI assistant, can read it.</p>
+    <label class="field"><span>New PIN</span><input id="new-pin" type="password" autocomplete="new-password"></label>
+    <label class="field"><span>Repeat PIN</span><input id="new-pin2" type="password" autocomplete="new-password"></label>
+    <button class="btn primary" id="btn-set-pin">Save PIN</button>
+    <div class="status" id="setup-status"></div>
+  </div>
+
+  <div class="card" id="login-card" hidden>
+    <h2>🔑 Moderator login</h2>
+    <label class="field"><span>PIN</span><input id="pin" type="password" autocomplete="current-password"></label>
+    <button class="btn primary" id="btn-login">Unlock</button>
+    <div class="status" id="login-status"></div>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="card">
+      <h2>🧾 Reports</h2>
+      <p class="small dim">Hidden reports disappear from Outbreak Watch and the public feed instantly. Delete is permanent.</p>
+      <button class="btn small" id="btn-refresh">↻ Refresh</button>
+      <div class="status" id="panel-status"></div>
+    </div>
+    <div id="list"></div>
+  </div>
+
+</div>
+
+<script src="moderate.js"></script>
+</body>
+</html>
