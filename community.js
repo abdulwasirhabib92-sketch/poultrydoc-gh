@@ -73,28 +73,64 @@ $("#btn-report").addEventListener("click", async () => {
   const st = $("#rep-status");
   const district = $("#rep-district").value.trim();
   if (!district) { st.className = "status err"; st.textContent = "Enter your district or town."; return; }
+  if (district.length > 80) { st.className = "status err"; st.textContent = "District name is too long."; return; }
+
+  // client throttle: one report per minute, max 5 per day per device
+  const K_LAST = "pdoc_last_report", K_DAY = "pdoc_reports_today";
+  const last = parseInt(localStorage.getItem(K_LAST) || "0", 10);
+  const gap = Date.now() - last;
+  if (gap < 60000) {
+    const wait = Math.ceil((60000 - gap) / 1000);
+    st.className = "status err";
+    st.textContent = "Please wait " + wait + "s before sending another report.";
+    return;
+  }
+  let day = { d: new Date().toDateString(), n: 0 };
+  try { day = JSON.parse(localStorage.getItem(K_DAY)) || day; } catch (e) {}
+  if (day.d !== new Date().toDateString()) day = { d: new Date().toDateString(), n: 0 };
+  if (day.n >= 5) {
+    st.className = "status err";
+    st.textContent = "You have sent 5 reports today. Please try again tomorrow.";
+    return;
+  }
+
   const did = $("#rep-disease").value;
   const d = DISEASES.find(x => x.id === did);
+  const clamp = v => Math.min(100000, Math.max(0, parseInt(v, 10) || 0));
+  const sick = clamp($("#rep-sick").value);
+  let dead = clamp($("#rep-dead").value);
+  if (dead > sick) dead = sick;
+
   const body = {
     region: $("#rep-region").value,
     district,
     disease_id: did,
     disease_name: d ? d.name : did,
     species: $("#rep-species").value,
-    birds_sick: Math.max(0, parseInt($("#rep-sick").value) || 0),
-    birds_dead: Math.max(0, parseInt($("#rep-dead").value) || 0),
-    notes: $("#rep-notes").value.trim() || null
+    birds_sick: sick,
+    birds_dead: dead,
+    notes: (($("#rep-notes").value || "").trim().slice(0, 500)) || null
   };
-  st.className = "status waiting"; st.textContent = "Sending…";
+
+  const btn = $("#btn-report");
+  st.className = "status waiting"; st.textContent = "Sending\u2026";
+  if (btn) btn.disabled = true;
   try {
     await sbReq("poultry_reports", { method: "POST", body: JSON.stringify(body) });
+    localStorage.setItem(K_LAST, String(Date.now()));
+    day.n += 1; localStorage.setItem(K_DAY, JSON.stringify(day));
     st.className = "status ok";
-    st.textContent = "✓ Report sent — thank you! Farmers near you will see this on Outbreak Watch.";
+    st.textContent = "\u2713 Report sent \u2014 thank you! Farmers near you will see this on Outbreak Watch.";
     $("#rep-district").value = ""; $("#rep-notes").value = "";
     $("#rep-sick").value = 0; $("#rep-dead").value = 0;
     loadWatch(); loadFeed();
   } catch (e) {
-    st.className = "status err"; st.textContent = "⚠ Couldn't send. Check your connection and try again.";
+    st.className = "status err";
+    st.textContent = (String(e.message || "").indexOf("rate") > -1)
+      ? "\u26a0 Too many reports from this network just now. Please try again in a few minutes."
+      : "\u26a0 Couldn't send. Check your connection and try again.";
+  } finally {
+    if (btn) btn.disabled = false;
   }
 });
 
