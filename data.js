@@ -3,7 +3,7 @@
    KCOA organic poultry remedy factsheets, and standard poultry disease texts.
    NOTE: Educational information only — always confirm with a veterinary officer. */
 
-const SPECIES = ["Chicken", "Guinea fowl", "Duck", "Turkey", "Pigeon"];
+const SPECIES = ["Chicken", "Guinea fowl", "Duck", "Turkey", "Pigeon", "Quail"];
 
 const DISEASES = [
   {
@@ -14,7 +14,7 @@ const DISEASES = [
     severity: "very high",
     urgent: true,
     reportable: false,
-    species: ["Chicken", "Guinea fowl", "Turkey", "Pigeon", "Duck"],
+    species: ["Chicken", "Guinea fowl", "Turkey", "Pigeon", "Duck", "Quail"],
     age: "All ages; often deadliest in young and unvaccinated birds",
     symptoms: {
       droppings: ["Greenish watery diarrhoea"],
@@ -101,7 +101,7 @@ const DISEASES = [
     type: "Parasitic (protozoa in the gut)",
     severity: "high",
     urgent: true,
-    species: ["Chicken", "Guinea fowl", "Turkey", "Duck"],
+    species: ["Chicken", "Guinea fowl", "Turkey", "Duck", "Quail"],
     age: "Mostly young birds 3–8 weeks; all ages in dirty, wet conditions",
     symptoms: {
       droppings: ["Bloody or red droppings", "Brownish watery droppings", "Yellow foamy droppings"],
@@ -187,7 +187,7 @@ const DISEASES = [
     type: "Bacterial (Salmonella gallinarum / pullorum)",
     severity: "high",
     urgent: true,
-    species: ["Chicken", "Guinea fowl", "Turkey", "Pigeon"],
+    species: ["Chicken", "Guinea fowl", "Turkey", "Pigeon", "Quail"],
     age: "Pullorum kills chicks in week 1; typhoid hits growers and adults",
     symptoms: {
       droppings: ["Whitish / chalky watery droppings"],
@@ -437,7 +437,7 @@ const DISEASES = [
     type: "Parasitic (roundworms, tapeworms, threadworms)",
     severity: "medium",
     urgent: false,
-    species: ["Chicken", "Guinea fowl", "Duck", "Turkey", "Pigeon"],
+    species: ["Chicken", "Guinea fowl", "Duck", "Turkey", "Pigeon", "Quail"],
     age: "All ages; free-range and scavenging birds worst affected",
     symptoms: {
       droppings: ["Worms visible in droppings", "Yellow foamy droppings", "Dark tarry droppings"],
@@ -724,6 +724,86 @@ const DISEASES = [
       "Separate young chicks from adult free-range birds."
     ],
     vetNote: "Can be confused with IB/CRD — gapeworm birds stretch neck UP with open beak but have clean eyes and no sneezing."
+  },
+
+  {
+    id: "ue",
+    name: "Ulcerative Enteritis (Quail Disease)",
+    aka: "Sudden deaths in quail with white watery droppings",
+    type: "Bacterial (Clostridium colinum)",
+    severity: "high",
+    urgent: true,
+    species: ["Quail", "Chicken", "Turkey"],
+    age: "Young birds 4–12 weeks most often; stress and coccidiosis trigger it",
+    symptoms: {
+      droppings: ["Whitish / chalky watery droppings", "Brownish watery droppings"],
+      behavior: ["Sudden deaths", "Dull, standing alone", "Not eating", "Weak, unable to stand"],
+      body: ["Ruffled feathers", "Very thin / wasted"]
+    },
+    match: {
+      "Sudden deaths": 4, "Whitish / chalky watery droppings": 3, "Dull, standing alone": 2,
+      "Ruffled feathers": 2, "Not eating": 1, "Weak, unable to stand": 2,
+      "Very thin / wasted": 2, "Brownish watery droppings": 1
+    },
+    spread: "Bacteria survive in droppings and litter for months. Birds pick it up from contaminated feed, water and litter. Coccidiosis damage and crowding open the door — outbreaks usually follow a coccidiosis case or a stressful move.",
+    photoHints: "Photograph the droppings (white and watery), a hunched bird with ruffled feathers, and the shed floor where birds are dying.",
+    diagnosis: "Quail dying suddenly in good body condition, with white watery droppings and no respiratory signs, points to ulcerative enteritis. Confirmation needs a vet or lab — the gut ulcers are seen after death.",
+    chemical: [
+      { name: "Streptomycin or Bacitracin in water", how: "Per label dose for 5–7 days, on vet advice.", note: "The classic treatment for quail disease." },
+      { name: "Amprolium or Sulpha drug if coccidiosis is also present", how: "Per label in water 5 days.", note: "Treat the coccidiosis that usually triggers the outbreak." }
+    ],
+    natural: [
+      { name: "Apple cider vinegar in water", prep: "1 tablespoon per litre of clean water.", how: "Give 3–5 days as supportive gut care.", evidence: "Traditional supportive practice; not a cure on its own." },
+      { name: "Clean dry litter + reduce crowding", prep: "Replace wet litter, lower stocking density.", how: "Immediately, and keep it dry.", evidence: "Litter moisture is the main driver of Clostridial outbreaks." }
+    ],
+    prevention: [
+      "Keep litter dry — wet litter is where Clostridium multiplies.",
+      "Control coccidiosis promptly; it is the usual trigger.",
+      "Never crowd quail; give one square foot per adult bird minimum.",
+      "Clean and disinfect drinkers daily."
+    ],
+    vetNote: "Often mistaken for coccidiosis. If quail die fast with white droppings and coccidiosis treatment fails, ask your vet about ulcerative enteritis."
+  },
+
+  {
+    id: "quailbronchitis",
+    name: "Quail Bronchitis",
+    aka: "Adenovirus respiratory disease of quail — kills chicks fast",
+    type: "Viral (Aviadenovirus)",
+    severity: "high",
+    urgent: true,
+    species: ["Quail"],
+    age: "Chicks and young quail; can also hit adults",
+    symptoms: {
+      breathing: ["Sneezing / coughing", "Gasping / rattling sound", "Rattling sound / gurgling", "Nasal discharge"],
+      behavior: ["Sudden deaths", "Dull, standing alone", "Not eating"],
+      body: ["Ruffled feathers"],
+      head: ["Swollen face / watery eyes"]
+    },
+    match: {
+      "Sneezing / coughing": 3, "Gasping / rattling sound": 3, "Rattling sound / gurgling": 3,
+      "Sudden deaths": 2, "Ruffled feathers": 2, "Dull, standing alone": 1,
+      "Not eating": 1, "Nasal discharge": 2, "Swollen face / watery eyes": 1
+    },
+    spread: "Spreads by direct contact and through the air between birds. Carrier birds and contaminated equipment carry it between cages and farms. Chicks are most vulnerable.",
+    photoHints: "Photograph a chick with ruffled feathers and open-mouth breathing, and any nasal discharge.",
+    diagnosis: "Rapidly spreading coughing and rattling in young quail with deaths suggests quail bronchitis. No specific drug exists; a vet can confirm with lab tests.",
+    chemical: [
+      { name: "No antiviral treatment exists", how: "Supportive care only.", note: "Antibiotics do not touch the virus." },
+      { name: "Antibiotics for secondary infection", how: "Tylosin or oxytetracycline in water, per label, on vet advice.", note: "Only limits bacteria that follow the virus." },
+      { name: "Vitamin A + electrolyte support", how: "Multivitamin in water 5 days.", note: "Helps survivors recover." }
+    ],
+    natural: [
+      { name: "Warm, dust-free housing", prep: "Raise brooder temperature slightly, remove dusty litter.", how: "Immediately until deaths stop.", evidence: "Cold and dust worsen respiratory disease in quail." },
+      { name: "Neem leaf water", prep: "Handful of fresh neem leaves per 2 litres, soak overnight, strain.", how: "Drinking water 5 days.", evidence: "Widely used supportive care in West African poultry." }
+    ],
+    prevention: [
+      "Buy chicks from a clean hatch, never from a farm with coughing birds.",
+      "Quarantine new birds for 2 weeks before mixing.",
+      "Keep brooder warm and litter dry and dust-free.",
+      "Clean and disinfect cages between batches."
+    ],
+    vetNote: "Distinguish from CRD and Newcastle. Quail bronchitis is quail-specific and spreads very fast within a batch."
   }
 ];
 
