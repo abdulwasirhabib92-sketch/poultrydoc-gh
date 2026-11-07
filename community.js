@@ -8,7 +8,16 @@ async function sbReq(path, opts = {}) {
     ...opts,
     headers: { "apikey": SB_ANON, "Authorization": "Bearer " + SB_ANON, "Content-Type": "application/json", ...(opts.headers || {}) }
   });
-  if (!res.ok) throw new Error("Network error (" + res.status + ")");
+  if (!res.ok) {
+    let msg = "Network error (" + res.status + ")";
+    try {
+      const body = await res.json();
+      if (body && body.message) msg = body.message;
+    } catch (e2) {}
+    const err = new Error(msg);
+    err.code = msg;
+    throw err;
+  }
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
 }
@@ -101,7 +110,18 @@ $("#btn-report").addEventListener("click", async () => {
   let dead = clamp($("#rep-dead").value);
   if (dead > sick) dead = sick;
 
+  const rawPhone = (($("#rep-phone") || {}).value || "").replace(/[^0-9+]/g, "");
+  const phone = /^0[0-9]{9}$/.test(rawPhone) ? rawPhone
+              : (/^\+233[0-9]{9}$/.test(rawPhone) ? rawPhone
+              : (/^233[0-9]{9}$/.test(rawPhone) ? "+" + rawPhone : ""));
+  if (!phone) {
+    st.className = "status err";
+    st.textContent = "Enter a valid Ghana phone number, e.g. 024 123 4567. It is never shown publicly.";
+    return;
+  }
+
   const body = {
+    phone_hash: phone,
     region: $("#rep-region").value,
     district,
     disease_id: did,
@@ -123,12 +143,20 @@ $("#btn-report").addEventListener("click", async () => {
     st.textContent = "\u2713 Report sent \u2014 thank you! Farmers near you will see this on Outbreak Watch.";
     $("#rep-district").value = ""; $("#rep-notes").value = "";
     $("#rep-sick").value = 0; $("#rep-dead").value = 0;
+    const ph = $("#rep-phone"); if (ph) ph.value = "";
     loadWatch(); loadFeed();
   } catch (e) {
     st.className = "status err";
-    st.textContent = (String(e.message || "").indexOf("rate") > -1)
-      ? "\u26a0 Too many reports from this network just now. Please try again in a few minutes."
-      : "\u26a0 Couldn't send. Check your connection and try again.";
+    const m = String(e.message || "");
+    if (m.indexOf("phone_daily_limit") > -1) {
+      st.textContent = "\u26a0 This number has already sent 2 reports today. Please try again tomorrow.";
+    } else if (m.indexOf("phone_required") > -1) {
+      st.textContent = "\u26a0 Enter a valid Ghana phone number, e.g. 024 123 4567.";
+    } else if (m.indexOf("rate") > -1) {
+      st.textContent = "\u26a0 Too many reports from this network just now. Please try again in a few minutes.";
+    } else {
+      st.textContent = "\u26a0 Couldn't send. Check your connection and try again.";
+    }
   } finally {
     if (btn) btn.disabled = false;
   }
