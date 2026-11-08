@@ -37,17 +37,27 @@ create table if not exists public.moderation_attempts (
 
 alter table public.moderation_attempts enable row level security;
 
+-- This table may already exist from an earlier build with different columns.
+-- Add what the throttle needs and backfill, so schema drift cannot break it again.
+alter table public.moderation_attempts
+    add column if not exists attempted_at timestamptz not null default now();
+alter table public.moderation_attempts
+    add column if not exists ok boolean;
+update public.moderation_attempts
+   set attempted_at = coalesce(attempted_at, created_at, now())
+ where attempted_at is null;
+
 -- ---------- 3. Status / setup / check ----------
 create or replace function public.pdoc_mod_status()
 returns boolean
-language sql security definer set search_path = public
+language sql security definer set search_path = public, extensions
 as $$
     select exists (select 1 from moderation_config);
 $$;
 
 create or replace function public.pdoc_mod_set_pin(p_pin text)
 returns void
-language plpgsql security definer set search_path = public
+language plpgsql security definer set search_path = public, extensions
 as $$
 begin
     if p_pin is null or length(p_pin) < 6 then
@@ -62,7 +72,7 @@ end $$;
 
 create or replace function public.pdoc_mod_check(p_pin text)
 returns boolean
-language plpgsql security definer set search_path = public
+language plpgsql security definer set search_path = public, extensions
 as $$
 declare
     ok        boolean;
@@ -115,7 +125,7 @@ returns table (
     notes         text,
     hidden        boolean
 )
-language plpgsql security definer set search_path = public
+language plpgsql security definer set search_path = public, extensions
 as $$
 begin
     perform pdoc_mod_check(p_pin);   -- raises bad_pin / too_many_attempts
@@ -130,7 +140,7 @@ end $$;
 -- ---------- 5. Hide / unhide / delete ----------
 create or replace function public.pdoc_mod_act(p_pin text, p_id uuid, p_action text)
 returns void
-language plpgsql security definer set search_path = public
+language plpgsql security definer set search_path = public, extensions
 as $$
 begin
     perform pdoc_mod_check(p_pin);
@@ -153,7 +163,7 @@ end $$;
 -- Keep the previously shipped name working for older clients.
 create or replace function public.moderate_report(p_pin text, p_id uuid, p_action text)
 returns void
-language plpgsql security definer set search_path = public
+language plpgsql security definer set search_path = public, extensions
 as $$
 begin
     perform pdoc_mod_act(p_pin, p_id, p_action);
