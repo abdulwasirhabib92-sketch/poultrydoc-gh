@@ -74,24 +74,44 @@ export default async function handler(req, res) {
     // Hard timeout: a slow/hung provider must fail fast, never hold the function open.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20_000);
-    let r;
+    // Try current model names in order; a retired model must not kill the endpoint.
+    const MODELS = (process.env.GEMINI_MODEL || "gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash")
+      .split(",").map(m => m.trim()).filter(Boolean);
+    let r = null, lastDetail = "";
     try {
-      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: ctrl.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text }, { inline_data: { mime_type: mime, data: base64 } }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 1200 }
-        })
-      });
+      for (const model of MODELS) {
+        const ctrl2 = new AbortController();
+        const t2 = setTimeout(() => ctrl2.abort(), 18_000);
+        let attempt;
+        try {
+          attempt = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: ctrl2.signal,
+            body: JSON.stringify({
+              contents: [{ parts: [{ text }, { inline_data: { mime_type: mime, data: base64 } }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 1200 }
+            })
+          });
+        } catch (e) {
+          lastDetail = "timeout:" + model;
+          attempt = null;
+        } finally {
+          clearTimeout(t2);
+        }
+        if (attempt && attempt.ok) { r = attempt; break; }
+        if (attempt) {
+          lastDetail = model + " " + attempt.status + " " + String(await attempt.text()).slice(0, 200);
+          // A bad key or quota will not be fixed by another model: stop early.
+          if (attempt.status === 401 || attempt.status === 403 || attempt.status === 429) { r = attempt; break; }
+        }
     } finally {
       clearTimeout(timer);
     }
     if (!r.ok) {
       // Log granular detail internally; return a generic status to the caller.
       const detail = await r.text();
-      console.error("[scan] upstream failure", r.status, String(detail).slice(0, 300).replace(/[\r\n]+/g, " "));
+      console.error("[scan] upstream failure", r.status, String(detail).slice(0, 300).replace(/[\r\n]+/g, " "), "| last:", lastDetail.slice(0, 200));
       const code = r.status === 429 ? 429 : r.status >= 500 ? 503 : 502;
       if (code === 429) res.setHeader("Retry-After", "30");
       return res.status(code).json({ error: code === 429 ? "Too Many Requests" : "Service Unavailable" });
