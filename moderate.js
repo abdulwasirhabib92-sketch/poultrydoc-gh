@@ -37,7 +37,7 @@ function say(el, msg, kind) {
 
 async function boot() {
   let isSet = false;
-  try { isSet = await rpc("moderation_pin_set"); } catch (e) { isSet = false; }
+  try { isSet = await rpc("pdoc_mod_status"); } catch (e) { isSet = false; }
 
   if (!isSet) {
     $("#setup-card").hidden = false;
@@ -57,7 +57,7 @@ $("#btn-set-pin").addEventListener("click", async () => {
   if (a.length < 6) return say("#setup-status", "PIN must be at least 6 characters.", "err");
   if (a !== b) return say("#setup-status", "The two PINs do not match.", "err");
   try {
-    await rpc("set_moderation_pin", { p_pin: a });
+    await rpc("pdoc_mod_set_pin", { p_pin: a });
     PIN = a;
     sessionStorage.setItem("pdoc_mod_pin", PIN);
     say("#setup-status", "PIN saved.", "ok");
@@ -66,7 +66,10 @@ $("#btn-set-pin").addEventListener("click", async () => {
     loadList();
   } catch (e) {
     const m = String(e.message);
-    say("#setup-status", m === "pin_already_set" ? "A PIN is already set. Use the login form." : "Could not save PIN: " + m, "err");
+    const msg = m === "pin_already_set" ? "A PIN is already set. Use the login form."
+              : m === "pin_too_short" ? "PIN must be at least 6 characters."
+              : "Could not save PIN: " + m;
+    say("#setup-status", msg, "err");
     if (m === "pin_already_set") { $("#setup-card").hidden = true; $("#login-card").hidden = false; }
   }
 });
@@ -75,7 +78,7 @@ $("#btn-login").addEventListener("click", async () => {
   const p = $("#pin").value;
   if (!p) return say("#login-status", "Enter your PIN.", "err");
   try {
-    await rpc("moderation_list", { p_pin: p });
+    await rpc("pdoc_mod_check", { p_pin: p });
     PIN = p;
     sessionStorage.setItem("pdoc_mod_pin", PIN);
     $("#login-card").hidden = true;
@@ -97,7 +100,7 @@ async function loadList() {
   $("#panel").hidden = false;
   say("#panel-status", "Loading…", "waiting");
   try {
-    const rows = await rpc("moderation_list", { p_pin: PIN });
+    const rows = await rpc("pdoc_mod_list", { p_pin: PIN });
     render(rows);
     say("#panel-status", rows.length + " report(s).", "ok");
   } catch (e) {
@@ -142,7 +145,7 @@ async function act(action, id, btn) {
   const original = btn.textContent;
   btn.disabled = true; btn.textContent = "…";
   try {
-    await rpc("moderate_report", { p_pin: PIN, p_id: id, p_action: action });
+    await rpc("pdoc_mod_act", { p_pin: PIN, p_id: id, p_action: action });
     await loadList();
   } catch (e) {
     say("#panel-status", "Action failed: " + e.message, "err");
