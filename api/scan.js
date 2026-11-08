@@ -105,14 +105,15 @@ export default async function handler(req, res) {
           // A bad key or quota will not be fixed by another model: stop early.
           if (attempt.status === 401 || attempt.status === 403 || attempt.status === 429) { r = attempt; break; }
         }
+      }
     } finally {
       clearTimeout(timer);
     }
-    if (!r.ok) {
+    if (!r || !r.ok) {
       // Log granular detail internally; return a generic status to the caller.
-      const detail = await r.text();
-      console.error("[scan] upstream failure", r.status, String(detail).slice(0, 300).replace(/[\r\n]+/g, " "), "| last:", lastDetail.slice(0, 200));
-      const code = r.status === 429 ? 429 : r.status >= 500 ? 503 : 502;
+      const detail = r ? await r.text() : "";
+      console.error("[scan] upstream failure", r ? r.status : "none", String(detail).slice(0, 300).replace(/[\r\n]+/g, " "), "| last:", lastDetail.slice(0, 200));
+      const code = !r ? 502 : (r.status === 429 ? 429 : r.status >= 500 ? 503 : 502);
       if (code === 429) res.setHeader("Retry-After", "30");
       return res.status(code).json({ error: code === 429 ? "Too Many Requests" : "Service Unavailable" });
     }
