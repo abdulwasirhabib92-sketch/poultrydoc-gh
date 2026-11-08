@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20_000);
     // Try current model names in order; a retired model must not kill the endpoint.
-    const MODELS = (process.env.GEMINI_MODEL || "gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash")
+    const MODELS = (process.env.GEMINI_MODEL || "gemini-3.5-flash,gemini-3.6-flash,gemini-3.8-flash,gemini-3-flash-preview")
       .split(",").map(m => m.trim()).filter(Boolean);
     let r = null, lastDetail = "";
     try {
