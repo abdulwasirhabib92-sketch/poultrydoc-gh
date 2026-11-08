@@ -1,0 +1,14 @@
+{
+  "name": "PoultryDoc GH — Poultry Disease Scanner",
+  "short_name": "PoultryDoc",
+  "description": "Scan, identify and treat poultry diseases. Feed formulation and community outbreak watch for Ghanaian farmers.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7f5",
+  "theme_color": "#0b5d3b",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
